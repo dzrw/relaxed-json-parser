@@ -1,83 +1,164 @@
-describe('Relaxed JSON Expression Parser', function() {
+describe('the rj parser', function() {
     
-    it('should be able to parse simple object literals', function() {
-        var result = rj.parse("a: 1, b: 2, \"quotedKey\": 3, 'aposQuotedKey': 4");
-        expect(result.length).toBe(4);
-        expect(result[0].key).toBe("a");
-        expect(result[0].value).toBe(" 1");
-        expect(result[1].key).toBe(" b");
-        expect(result[1].value).toBe(" 2");  
-        expect(result[2].key).toBe(" \"quotedKey\"");
-        expect(result[2].value).toBe(" 3");   
-        expect(result[3].key).toBe(" 'aposQuotedKey'");
-        expect(result[3].value).toBe(" 4");                         
+    describe('recognizes a superset of JSON', function() {
+        
+        it('should be able to parse JSON', function() {
+            var text = '{ "a": 1, "b": "two", "c": [ 3, 4 ], "d": { "five": 6 } }';
+            var actual = rj.parse(text);
+
+            expect(actual).toBeDefined();
+            expect(actual.a).toBe(1);
+            expect(actual.b).toBe('two');
+            expect(actual.c).toContain(3);
+            expect(actual.c).toContain(4);
+            expect(actual.d).toBeDefined();
+            expect(actual.d.five).toBe(6);
+        });
+
+        it('should be able to parse JSON containing symbol literals', function() {
+            var text = '{ "html": @firstName }';
+            var actual = rj.parse(text);
+
+            expect(actual).toBeDefined();
+            expect(actual.html).toBeDefined();
+            expect(actual.html.__symbol_literal).toBe('firstName');
+        });
+
+        it('should be able to deal with missing outer braces', function() {
+            var text = '"a": 1, "b": 2';
+            
+            var actual = rj.parse(text);
+            
+            expect(actual).toBeDefined();
+            expect(actual.a).toBe(1);
+            expect(actual.b).toBe(2);
+        });
+
+        it('should be able to deal with unquoted keys which are valid JavaScript identifiers', function() {
+            var text = '{ checked: true }';
+            
+            var actual = rj.parse(text);
+            
+            expect(actual).toBeDefined();
+            expect(actual.checked).toBeTruthy();
+        });
+
+        it('should be able to deal with unquoted keys which are JavaScript reserved words', function() {
+            var text = '{ class: "boss" }';
+            
+            var actual = rj.parse(text);
+            
+            expect(actual).toBeDefined();
+            expect(actual['class']).toBe('boss');
+        });
+
+        it('should be able to deal with unquoted keys in a complex object', function() {
+            var text = 'class: { a: 1 }';
+            
+            var actual = rj.parse(text);
+            
+            expect(actual).toBeDefined();
+            expect(actual['class'].a).toBe(1);
+        });
+
     });
 
-    it('should ignore any outer braces', function() {
-        var result = rj.parse("{a: 1}");
-        expect(result.length).toBe(1);
-        expect(result[0].key).toBe("a");
-        expect(result[0].value).toBe(" 1");        
+    describe('resolves symbol literals using a symbol table', function() {
+        
+        it('should call the reviver callback, if specified', function() {
+            var text = '{ "html": @firstName }';
+            var model = { firstName: 'bob' };
+
+            var reviver = rj.prepareSymbolTableReviver(model);
+
+            expect(reviver).toBeDefined();
+            expect(typeof reviver).toBe('function');
+
+            var actual = rj.parse(text, reviver);
+            
+            expect(actual).toBeDefined();
+            expect(actual.html).toBe('bob');
+        });
+
+        it('should be able to parse and revive a simple object', function() {
+            var text = '{ "html": @firstName, "color": @color }';
+            var model = { firstName: 'bob', color: 'red' };
+
+            var reviver = rj.prepareSymbolTableReviver(model);
+
+            expect(reviver).toBeDefined();
+            expect(typeof reviver).toBe('function');
+
+            var actual = rj.parse(text, reviver);
+            
+            expect(actual).toBeDefined();
+            expect(actual.html).toBe('bob');
+            expect(actual.color).toBe('red');
+        });
+
+        it('should be able to parse and revive a nested object', function() {
+            var text = '{ "html": @firstName, "css": { "color": @color } }';
+            var model = { firstName: 'bob', color: 'red' };
+
+            var reviver = rj.prepareSymbolTableReviver(model);
+
+            expect(reviver).toBeDefined();
+            expect(typeof reviver).toBe('function');
+
+            var actual = rj.parse(text, reviver);
+            
+            expect(actual).toBeDefined();
+            expect(actual.html).toBe('bob');
+            expect(actual.css).toBeDefined();
+            expect(actual.css.color).toBe('red');
+        });
+
+        it('should be able to parse and revive a complex object', function() {
+            var text = '{ "html": @firstName, "css": { "color": @color, "float": @float }, "attr": { "class": @className } }';
+            var model = { firstName: 'bob', color: 'red', float: 'none', className: 'ui-label' };
+
+            var reviver = rj.prepareSymbolTableReviver(model);
+
+            expect(reviver).toBeDefined();
+            expect(typeof reviver).toBe('function');
+
+            var actual = rj.parse(text, reviver);
+            
+            expect(actual).toBeDefined();
+            expect(actual.html).toBe('bob');
+            expect(actual.css.color).toBe('red');
+            expect(actual.css.float).toBe('none');
+            expect(actual.attr['class']).toBe('ui-label');
+        });
+
     });
 
-    it('should be able to parse object literals containing string literals', function() {
-        var result = rj.parse("a: \"comma, colon: brace{ bracket[ apos' escapedQuot\\\" end\", b: 'escapedApos\\\' brace} bracket] quot\"'");
-        expect(result.length).toBe(2);
-        expect(result[0].key).toBe("a");
-        expect(result[0].value).toBe(" \"comma, colon: brace{ bracket[ apos' escapedQuot\\\" end\"");
-        expect(result[1].key).toBe(" b");
-        expect(result[1].value).toBe(" 'escapedApos\\\' brace} bracket] quot\"'");        
+    describe("tortures Crockford's json2.js until it parses knockout.js data-bind attributes", function() {
+        
+        it('should be able to handle this abomination', function() {
+            var text = 'html: @firstName, css: { color: @color, float: @float }, attr: { class: @className }';
+            var model = { firstName: 'bob', color: 'red', float: 'none', className: 'ui-label' };
+
+            var reviver = rj.prepareSymbolTableReviver(model);
+
+            expect(reviver).toBeDefined();
+            expect(typeof reviver).toBe('function');
+
+            var actual = rj.parse(text, reviver);
+
+            expect(actual).toBeDefined();
+            expect(actual.html).toBe('bob');
+            expect(actual.css.color).toBe('red');
+            expect(actual.css.float).toBe('none');
+            expect(actual.attr['class']).toBe('ui-label');
+        });
+
+        it('should not support JavaScript expressions because we have standards', function() {
+            var text = 'visible: firstName().length > 0';
+
+            expect(rj.parse, text).toThrow('rj.parse: text could not be made JSON parseable');
+        });
+
     });
 
-    it('should be able to parse object literals containing child objects, arrays, function literals, and newlines', function() {
-        var result = rj.parse(
-            "myObject : { someChild: { }, someChildArray: [1,2,3], \"quotedChildProp\": 'string value' },\n"
-          + "someFn: function(a, b, c) { var regex = /}/; var str='/})({'; return {}; },"
-          + "myArray : [{}, function() { }, \"my'Str\", 'my\"Str']"
-        );
-        expect(result.length).toBe(3);
-        expect(result[0].key).toBe("myObject ");
-        expect(result[0].value).toBe(" { someChild: { }, someChildArray: [1,2,3], \"quotedChildProp\": 'string value' }");
-        expect(result[1].key).toBe("\nsomeFn");
-        expect(result[1].value).toBe(" function(a, b, c) { var regex = /}/; var str='/})({'; return {}; }");
-        expect(result[2].key).toBe("myArray ");
-        expect(result[2].value).toBe(" [{}, function() { }, \"my'Str\", 'my\"Str']");
-    });
-
-    it('should be able to cope with malformed syntax (things that aren\'t key-value pairs)', function() {
-        var result = rj.parse("malformed1, 'mal:formed2', good:3, { malformed: 4 }");
-        expect(result.length).toBe(4);
-        expect(result[0].unknown).toBe("malformed1");
-        expect(result[1].unknown).toBe(" 'mal:formed2'");
-        expect(result[2].key).toBe(" good");
-        expect(result[2].value).toBe("3");
-        expect(result[3].unknown).toBe(" { malformed: 4 }");
-    });
-
-    it('should ensure all keys are wrapped in quotes', function() {
-        var rewritten = rj.rewrite("a: 1, 'b': 2, \"c\": 3");
-        expect(rewritten).toBe("'a': 1, 'b': 2, \"c\": 3");
-    });
-
-    it('should convert JSON values to property accessors', function () {
-        var rewritten = rj.rewrite('a : 1, b : firstName, c : function() { return "returnValue"; }');
-
-        var model = { firstName: "bob", lastName: "smith" };
-        with (model) {
-            var parsedRewritten = eval("({" + rewritten + "})");
-            expect(parsedRewritten.a).toBe(1);
-            expect(parsedRewritten.b).toBe("bob");
-            expect(parsedRewritten.c()).toBe("returnValue");
-
-            parsedRewritten._ko_property_writers.b("bob2");
-            expect(model.firstName).toBe("bob2");
-        }
-    });
-
-    it('should be able to eval rewritten literals that contain unquoted keywords as keys', function() {
-        var rewritten = rj.rewrite("if: true");
-        expect(rewritten).toBe("'if': true");
-        var evaluated = eval("({" + rewritten + "})");
-        expect(evaluated['if']).toBe(true);
-    });
 });
