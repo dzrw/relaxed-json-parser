@@ -1,7 +1,7 @@
 /*
     rj.js - a parser which recognizes a superset of JSON
 
-    http://github.com/politician/rj
+    http://github.com/politician/relaxed-json-parser
 
     Copyright (c) 2012 David Zarlengo
     
