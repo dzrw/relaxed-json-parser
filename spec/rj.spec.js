@@ -69,12 +69,7 @@ describe('the rj parser', function() {
             var text = '{ "html": @firstName }';
             var model = { firstName: 'bob' };
 
-            var reviver = rj.prepareSymbolTableReviver(model);
-
-            expect(reviver).toBeDefined();
-            expect(typeof reviver).toBe('function');
-
-            var actual = rj.parse(text, reviver);
+            var actual = rj.parse(text, model);
             
             expect(actual).toBeDefined();
             expect(actual.html).toBe('bob');
@@ -84,12 +79,7 @@ describe('the rj parser', function() {
             var text = '{ "html": @firstName, "color": @color }';
             var model = { firstName: 'bob', color: 'red' };
 
-            var reviver = rj.prepareSymbolTableReviver(model);
-
-            expect(reviver).toBeDefined();
-            expect(typeof reviver).toBe('function');
-
-            var actual = rj.parse(text, reviver);
+            var actual = rj.parse(text, model);
             
             expect(actual).toBeDefined();
             expect(actual.html).toBe('bob');
@@ -100,12 +90,7 @@ describe('the rj parser', function() {
             var text = '{ "html": @firstName, "css": { "color": @color } }';
             var model = { firstName: 'bob', color: 'red' };
 
-            var reviver = rj.prepareSymbolTableReviver(model);
-
-            expect(reviver).toBeDefined();
-            expect(typeof reviver).toBe('function');
-
-            var actual = rj.parse(text, reviver);
+            var actual = rj.parse(text, model);
             
             expect(actual).toBeDefined();
             expect(actual.html).toBe('bob');
@@ -117,12 +102,7 @@ describe('the rj parser', function() {
             var text = '{ "html": @firstName, "css": { "color": @color, "float": @float }, "attr": { "class": @className } }';
             var model = { firstName: 'bob', color: 'red', float: 'none', className: 'ui-label' };
 
-            var reviver = rj.prepareSymbolTableReviver(model);
-
-            expect(reviver).toBeDefined();
-            expect(typeof reviver).toBe('function');
-
-            var actual = rj.parse(text, reviver);
+            var actual = rj.parse(text, model);
             
             expect(actual).toBeDefined();
             expect(actual.html).toBe('bob');
@@ -139,12 +119,7 @@ describe('the rj parser', function() {
             var text = 'html: @firstName, css: { color: @color, float: @float }, attr: { class: @className }';
             var model = { firstName: 'bob', color: 'red', float: 'none', className: 'ui-label' };
 
-            var reviver = rj.prepareSymbolTableReviver(model);
-
-            expect(reviver).toBeDefined();
-            expect(typeof reviver).toBe('function');
-
-            var actual = rj.parse(text, reviver);
+            var actual = rj.parse(text, model);
 
             expect(actual).toBeDefined();
             expect(actual.html).toBe('bob');

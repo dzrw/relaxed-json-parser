@@ -282,28 +282,6 @@
         throw TypeError('accessor');
     }
 
-    function prepareSymbolTableReviver (symbolTableAccessor) {
-
-// The prepareSymbolTableReviver function creates a reviver which replaces
-// symbol literals with their corresponding values in a specified symbol table.
-
-        var lookup = toLookup(symbolTableAccessor);
-
-        var reviver = function(k, value) {
-            var replacement;
-            if (value && hop(value, '__symbol_literal')) {
-                replacement = lookup(value['__symbol_literal']);
-                if (!!replacement) {
-                    value = replacement;
-                }
-            } 
-
-            return value;
-        };
-
-        return reviver;
-    }
-
     function escapeMisunderstoodUnicodeCharacters(text) {
 
 // We replace certain Unicode characters with escape sequences. JavaScript
@@ -342,6 +320,25 @@
 // a JavaScript value if the text is a valid JSON text.
 
         var j;
+
+        if (typeof reviver === 'object') {
+
+// If the reviver is specified as an object, assume that the caller wants to
+// do automatic symbol literal resolution using that object.
+
+            var lookup = toLookup(reviver);
+            reviver = function(k, value) {
+                var replacement;
+                if (value && hop(value, '__symbol_literal')) {
+                    replacement = lookup(value['__symbol_literal']);
+                    if (!!replacement) {
+                        value = replacement;
+                    }
+                } 
+
+                return value;
+            };
+        }
 
         function walk(holder, key) {
 
@@ -412,8 +409,7 @@
 
     return {
         rewrite: rewrite, 
-        parse: parse,
-        prepareSymbolTableReviver: prepareSymbolTableReviver 
+        parse: parse
     };
 
 }));
