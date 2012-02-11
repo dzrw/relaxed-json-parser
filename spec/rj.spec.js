@@ -136,4 +136,21 @@ describe('the rj parser', function() {
 
     });
 
+    describe("exposes a composable api", function() {
+       
+       it('should be possible to combine the rewriter and reviver with custom JSON parsing implementations', function() {
+            var text = '{ "html": @firstName, "color": @color }';
+            var model = { firstName: 'bob', color: 'red' };
+
+            var rewritten = rj.rewrite(text);
+            var parsed = JSON.parse(rewritten);
+            var actual = rj.revive(parsed, model);
+
+            expect(actual).toBeDefined();
+            expect(actual.html).toBe('bob');
+            expect(actual.color).toBe('red');
+       })
+        
+    });
+
 });

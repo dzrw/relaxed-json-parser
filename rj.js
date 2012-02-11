@@ -258,30 +258,6 @@
         return text;
     }
 
-    function toLookup(accessor) {
-
-// This function wraps the parameter in a property accessor unless it's already
-// a function.
-
-        if (typeof accessor === 'function') {
-            return accessor;
-        }
-
-        if (typeof accessor === 'object') {
-            var lookup = accessor;
-            return function() {
-                var k, v, args;
-                args = Array.prototype.slice.call(arguments);
-                if (args.length >= 1) {
-                    k = args[0];
-                    return hop(lookup, k) && lookup[k];
-                } 
-            }
-        } 
-        
-        throw TypeError('accessor');
-    }
-
     function escapeMisunderstoodUnicodeCharacters(text) {
 
 // We replace certain Unicode characters with escape sequences. JavaScript
@@ -314,23 +290,31 @@
         return text;
     }
 
-    function parse (text, reviver) {
+    function revive (j, reviver) {
 
-// The parse method takes a text and an optional reviver function, and returns
-// a JavaScript value if the text is a valid JSON text.
-
-        var j;
+// The revive method is used to recursively walk a structure, passing
+// each name/value pair to a reviver function for possible transformation.
 
         if (typeof reviver === 'object') {
 
-// If the reviver is specified as an object, assume that the caller wants to
-// do automatic symbol literal resolution using that object.
+// If the reviver is passed as an object, assume that the caller wants to
+// do symbol literal resolution using that object.
 
-            var lookup = toLookup(reviver);
+            var symbols = reviver;
+
+            var resolver = function() {
+                var k, v, args;
+                args = Array.prototype.slice.call(arguments);
+                if (args.length >= 1) {
+                    k = args[0];
+                    return hop(symbols, k) && symbols[k];
+                } 
+            }
+
             reviver = function(k, value) {
                 var replacement;
                 if (value && hop(value, '__symbol_literal')) {
-                    replacement = lookup(value['__symbol_literal']);
+                    replacement = resolver(value['__symbol_literal']);
                     if (!!replacement) {
                         value = replacement;
                     }
@@ -359,8 +343,17 @@
                 }
             }
             return reviver.call(holder, key, value);
-        }
+        }        
 
+        return typeof reviver === 'function' ? walk({'': j}, '') : j;
+    }
+
+    function parse (text, reviver) {
+
+// The parse method takes a text and an optional reviver function, and returns
+// a JavaScript value if the text is a valid JSON text.
+
+        var j;
 
 // Parsing happens in five stages. In the first stage, we apply a series of
 // transforms to the text to transform it into a valid JSON text.
@@ -395,9 +388,7 @@
 // In the optional fifth stage, we recursively walk the new structure, passing
 // each name/value pair to a reviver function for possible transformation.
 
-            return typeof reviver === 'function'
-                ? walk({'': j}, '')
-                : j;
+            return revive(j, reviver);
         }
 
 // If the text is not JSON parseable, then a SyntaxError is thrown.
@@ -409,7 +400,8 @@
 
     return {
         rewrite: rewrite, 
-        parse: parse
+        parse: parse,
+        revive: revive
     };
 
 }));
