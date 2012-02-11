@@ -399,6 +399,7 @@
 // Export the module.
 
     return {
+        version: '0.1.0',
         rewrite: rewrite, 
         parse: parse,
         revive: revive
