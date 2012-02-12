@@ -12,8 +12,7 @@ expect(y.attr.href).toBe(x.location)
 
 The parse method accepts a text and an optional resolver, and produces a JavaScript object. A resolver is either an object used to bind symbol literals to values, or a function used to rewrite the object.
 
-```CoffeScript
-
+```CoffeeScript
 text = 'cats: "the best!"'
 
 o = rj.parse text, (k, value) ->
@@ -24,7 +23,6 @@ o = rj.parse text, (k, value) ->
     value
 
 expect(o.dogs).toBe("the best!");
-
 ```
 
 ## .revive
