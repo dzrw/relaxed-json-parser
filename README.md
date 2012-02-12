@@ -8,11 +8,11 @@ y = rj.parse 'attr: { href: @location }', x
 expect(y.attr.href).toBe(x.location)
 ```
 
-## `parse`
+## .parse
 
 The parse method accepts a text and an optional resolver, and produces a JavaScript object.
 
-## `revive`
+## .revive
 
 The revive method applys a resolver to a source object to produce a "revived" object.
 
@@ -25,7 +25,7 @@ revivedObj = rj.revive parsedObj, resolver
 expect(revivedObj.attr.href).toBe(resolver.location)
 ```
 
-## `rewrite`
+## .rewrite
 
 The rewrite method accepts a text and applies a series a regular expression transformations to rewrite it as a valid JSON text.
 
