@@ -74,6 +74,14 @@ o = rj.parse '"book": { "title": @title, "author": @author }'
 o = rj.parse 'book: { title: @title, author: @author }'
 ```
 
+## It's a bit too heavy for me and/or I don't need to match Unicode symbols
+
+Yes, the symbol literal and unquoted key parsing code works by looking for legal JavaScript identifiers which, as you probably know, are defined in terms of Unicode categories.  However, as you also probably know, the built in regular expression engine does not support the `\p{Category}` script, so I've included all the ranges in expanded form.  This support balloons the file size to 30kb dev, 15 kb minified.
+
+If you don't need support for Unicode identifiers, use [rj.enUS.js][sansunicode] (11kb dev, 3kb minified) which matches identifiers using `([$_a-zA-Z][$_a-zA-Z0-9])*` instead.
+
+[sansunicode]: https://github.com/politician/relaxed-json-parser/blob/master/lang/rj.enUS.js
+
 License
 ---
 
