@@ -10,7 +10,22 @@ expect(y.attr.href).toBe(x.location)
 
 ## .parse
 
-The parse method accepts a text and an optional resolver, and produces a JavaScript object.
+The parse method accepts a text and an optional resolver, and produces a JavaScript object. A resolver is either an object used to bind symbol literals to values, or a function used to rewrite the object.
+
+```CoffeScript
+
+text = 'cats: "the best!"'
+
+o = rj.parse text, (k, value) ->
+    if value and value.hasOwnProperty('cats')
+        value.dogs = value.cats
+        delete value.cats
+
+    value
+
+expect(o.dogs).toBe("the best!");
+
+```
 
 ## .revive
 
@@ -27,7 +42,7 @@ expect(revivedObj.attr.href).toBe(resolver.location)
 
 ## .rewrite
 
-The rewrite method accepts a text and applies a series a regular expression transformations to rewrite it as a valid JSON text.
+The rewrite method accepts a text and applies a series of regular expression transformations to rewrite it as a valid JSON text.
 
 ## Regular Expressions?! Now you have two problems...
 

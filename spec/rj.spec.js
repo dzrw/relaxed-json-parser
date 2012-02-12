@@ -153,4 +153,23 @@ describe('the rj parser', function() {
         
     });
 
+    describe("the examples in the readme work", function () {
+
+        it('should replace cats with dogs', function() {
+            var text = 'cats: "are the best!"';
+
+            var actual = rj.parse(text, function (k, value) {
+                if (value && value.hasOwnProperty('cats')) {
+                    value.dogs = value.cats;
+                    delete value.cats;
+                }
+
+                return value;
+            });
+
+            expect(actual.dogs).toBeDefined();
+        });
+        
+    });
+
 });
